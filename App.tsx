@@ -1,118 +1,79 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import 'react-native-gesture-handler'
+import React, { useEffect } from 'react'
+import { PaperProvider } from 'react-native-paper'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { NavigationContainer } from '@react-navigation/native'
+import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import { Image } from 'react-native'
+import { paperTheme, C } from './src/theme'
+import { useStore } from './src/store/appStore'
+import { AiRuntime } from './src/native/AiRuntime'
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import OnboardingScreen from './src/screens/OnboardingScreen'
+import HomeScreen from './src/screens/HomeScreen'
+import ScanScreen from './src/screens/ScanScreen'
+import ExplainScreen from './src/screens/ExplainScreen'
+import QuizScreen from './src/screens/QuizScreen'
+import TeacherScreen from './src/screens/TeacherScreen'
+import ChatScreen from './src/screens/ChatScreen'
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+const Stack = createNativeStackNavigator()
+const Tab = createBottomTabNavigator()
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+function MainTabs() {
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: C.brand500,
+        tabBarInactiveTintColor: C.textTertiary,
+        tabBarStyle: { borderTopColor: C.surface3, height: 64, paddingBottom: 10, paddingTop: 6 },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+      }}
+    >
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ tabBarLabel: 'Learn', tabBarIcon: ({ color }) => <Image source={require('./src/assets/icons/ic_books.png')} style={{ width: 28, height: 28, tintColor: color }} /> }}
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+      <Tab.Screen
+        name="Teacher"
+        component={TeacherScreen}
+        options={{ tabBarLabel: 'Teacher', tabBarIcon: ({ color }) => <Image source={require('./src/assets/icons/ic_teacher.png')} style={{ width: 28, height: 28, tintColor: color }} /> }}
+      />
+    </Tab.Navigator>
+  )
 }
 
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+export default function App() {
+  const { setModelReady, setModelLoading } = useStore()
 
-export default App;
+  useEffect(() => {
+    setModelLoading(true)
+    AiRuntime.warmup()
+      .then(() => setModelReady(true))
+      .catch((e: any) => {
+        if (e?.code === 'WARMUP_BUSY') return // already loading, ignore
+        setModelReady(false)
+      })
+      .finally(() => setModelLoading(false))
+  }, [])
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaperProvider theme={paperTheme}>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="Scan" component={ScanScreen} />
+            <Stack.Screen name="Explain" component={ExplainScreen} />
+            <Stack.Screen name="Quiz" component={QuizScreen} />
+            <Stack.Screen name="Chat" component={ChatScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </PaperProvider>
+    </GestureHandlerRootView>
+  )
+}
