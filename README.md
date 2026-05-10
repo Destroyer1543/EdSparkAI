@@ -46,22 +46,6 @@ This was the core engineering challenge. Most on-device LLM demos require flagsh
 
 **Parallel Model Download** — 6 concurrent HTTP range requests (`Range: bytes=start-end`) download the 1.4 GB model ~6× faster than a single stream. Uses `RandomAccessFile.seek()` to write each chunk directly at its correct file offset — no merge step required.
 
-### Problems We Solved
-
-**LiteRT Java compatibility** — `com.google.ai.edge.litertlm:0.10.22+` compiles against Java 21 class files but Android builds use Java 17 (`jvmTarget = "17"`). This causes `UnsupportedClassVersionError` at runtime. Fix: pin to `0.10.14`.
-
-**React Native dependency conflicts** — `react-native-screens 4.x` has a codegen schema bug. `<3.34` has a `StateWrapper` crash. Working range: `3.34.x – 3.37.x`. `react-native-reanimated 4.x` requires RN 0.77+. `mediapipe 0.10.22+` breaks Java 17 builds.
-
-**LLM output is not always valid JSON** — Even with explicit instructions, the model occasionally outputs markdown fences (` ```json `) or truncates mid-object due to token limits. We handle this with:
-- Strip ` ```json ``` ` fences
-- Find first `{` and last `}`
-- Repair truncated JSON: count unbalanced `{[` → append `]}`
-- Close unclosed string literals if `"` count is odd
-
-**Bilingual TTS race conditions** — Android TTS `speak()` is async. Queueing both languages caused race conditions with the stop button. Fix: `await` each utterance sequentially.
-
-**OCR path handling** — `BitmapFactory.decodeFile()` requires a plain filesystem path. The React Native `file://` URI prefix must be stripped before passing to native Kotlin. Crop output from `cacheDir` uses the same plain-path convention.
-
 ---
 
 ## Architecture
