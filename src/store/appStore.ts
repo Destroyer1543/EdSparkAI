@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export interface QuizQuestion {
   question: string
@@ -64,8 +66,11 @@ export const LANG_LABELS: Record<Lang, { en: string; native: string }> = {
 }
 
 interface AppState {
+  _hydrated: boolean
+  modelExists: boolean | null
   modelReady: boolean
   modelLoading: boolean
+  hasOnboarded: boolean
   language: Lang
   classGrade: string
   subject: string
@@ -82,8 +87,10 @@ interface AppState {
   weakTopics: { topic: string; wrongCount: number }[]
   chatSessions: ChatSession[]
 
+  setModelExists: (v: boolean | null) => void
   setModelReady: (v: boolean) => void
   setModelLoading: (v: boolean) => void
+  setHasOnboarded: (v: boolean) => void
   setLanguage: (l: Lang) => void
   setClassGrade: (g: string) => void
   setSubject: (s: string) => void
@@ -100,52 +107,74 @@ interface AppState {
   reset: () => void
 }
 
-export const useStore = create<AppState>((set) => ({
-  modelReady: false,
-  modelLoading: false,
-  language: 'hi',
-  classGrade: '7',
-  subject: 'Science',
+export const useStore = create<AppState>()(
+  persist(
+    (set) => ({
+      _hydrated: false,
+      modelExists: null,
+      modelReady: false,
+      modelLoading: false,
+      hasOnboarded: false,
+      language: 'hi',
+      classGrade: '7',
+      subject: 'Science',
 
-  currentImagePath: '',
-  currentOcrBlocks: [],
-  selectedBlockText: '',
+      currentImagePath: '',
+      currentOcrBlocks: [],
+      selectedBlockText: '',
 
-  difficulty: 'grade',
-  explainResult: null,
-  teacherPackResult: null,
-  inferring: false,
-  explanationsGenerated: 0,
-  weakTopics: [],
-  chatSessions: [],
+      difficulty: 'grade',
+      explainResult: null,
+      teacherPackResult: null,
+      inferring: false,
+      explanationsGenerated: 0,
+      weakTopics: [],
+      chatSessions: [],
 
-  setModelReady:      (v) => set({ modelReady: v }),
-  setModelLoading:    (v) => set({ modelLoading: v }),
-  setLanguage:        (l) => set({ language: l }),
-  setClassGrade:      (g) => set({ classGrade: g }),
-  setSubject:         (s) => set({ subject: s }),
-  setCurrentPage:     (imagePath, blocks) => set({ currentImagePath: imagePath, currentOcrBlocks: blocks }),
-  setSelectedBlock:   (text) => set({ selectedBlockText: text }),
-  setDifficulty:      (d) => set({ difficulty: d }),
-  setExplainResult:   (r) => set({ explainResult: r }),
-  setTeacherPackResult: (r) => set({ teacherPackResult: r }),
-  setInferring:       (v) => set({ inferring: v }),
-  incrementExplanations: () => set((s) => ({ explanationsGenerated: s.explanationsGenerated + 1 })),
-  saveChatSession: (session) => set((s) => {
-    const exists = s.chatSessions.find(c => c.id === session.id)
-    const updated = exists
-      ? s.chatSessions.map(c => c.id === session.id ? session : c)
-      : [session, ...s.chatSessions]
-    return { chatSessions: updated.slice(0, 20) }
-  }),
-  deleteChatSession: (id) => set((s) => ({ chatSessions: s.chatSessions.filter(c => c.id !== id) })),
-  recordQuizResult: (topic, wrong, total) => set((s) => {
-    if (wrong === 0) return s
-    const existing = s.weakTopics.find(t => t.topic === topic)
-    const updated = existing
-      ? s.weakTopics.map(t => t.topic === topic ? { ...t, wrongCount: t.wrongCount + wrong } : t)
-      : [...s.weakTopics, { topic, wrongCount: wrong }]
-    return { weakTopics: updated.sort((a, b) => b.wrongCount - a.wrongCount).slice(0, 5) }
-  }),
-  reset:              () => set({ currentImagePath: '', currentOcrBlocks: [], selectedBlockText: '', explainResult: null, explanationsGenerated: 0, weakTopics: [] }),
-}))
+      setModelExists:     (v) => set({ modelExists: v }),
+      setModelReady:      (v) => set({ modelReady: v }),
+      setModelLoading:    (v) => set({ modelLoading: v }),
+      setHasOnboarded:    (v) => set({ hasOnboarded: v }),
+      setLanguage:        (l) => set({ language: l }),
+      setClassGrade:      (g) => set({ classGrade: g }),
+      setSubject:         (s) => set({ subject: s }),
+      setCurrentPage:     (imagePath, blocks) => set({ currentImagePath: imagePath, currentOcrBlocks: blocks }),
+      setSelectedBlock:   (text) => set({ selectedBlockText: text }),
+      setDifficulty:      (d) => set({ difficulty: d }),
+      setExplainResult:   (r) => set({ explainResult: r }),
+      setTeacherPackResult: (r) => set({ teacherPackResult: r }),
+      setInferring:       (v) => set({ inferring: v }),
+      incrementExplanations: () => set((s) => ({ explanationsGenerated: s.explanationsGenerated + 1 })),
+      saveChatSession: (session) => set((s) => {
+        const exists = s.chatSessions.find(c => c.id === session.id)
+        const updated = exists
+          ? s.chatSessions.map(c => c.id === session.id ? session : c)
+          : [session, ...s.chatSessions]
+        return { chatSessions: updated.slice(0, 20) }
+      }),
+      deleteChatSession: (id) => set((s) => ({ chatSessions: s.chatSessions.filter(c => c.id !== id) })),
+      recordQuizResult: (topic, wrong, total) => set((s) => {
+        if (wrong === 0) return s
+        const existing = s.weakTopics.find(t => t.topic === topic)
+        const updated = existing
+          ? s.weakTopics.map(t => t.topic === topic ? { ...t, wrongCount: t.wrongCount + wrong } : t)
+          : [...s.weakTopics, { topic, wrongCount: wrong }]
+        return { weakTopics: updated.sort((a, b) => b.wrongCount - a.wrongCount).slice(0, 5) }
+      }),
+      reset: () => set({ currentImagePath: '', currentOcrBlocks: [], selectedBlockText: '', explainResult: null }),
+    }),
+    {
+      name: 'gemmaspark-store',
+      storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => { if (state) state._hydrated = true },
+      partialize: (s) => ({
+        hasOnboarded:          s.hasOnboarded,
+        language:              s.language,
+        classGrade:            s.classGrade,
+        explanationsGenerated: s.explanationsGenerated,
+        weakTopics:            s.weakTopics,
+        chatSessions:          s.chatSessions,
+      }),
+    }
+  )
+)

@@ -19,13 +19,13 @@ export default function ActionBar({ onReadAloud, speaking, onQuiz, onSimpler }: 
         onPress={speaking ? () => Speech.stop() : onReadAloud}
       />
       <ActionBtn
-        icon={<Text style={s.ico}>↓</Text>}
+        icon={<Image source={require('../assets/icons/ic_pencil.png')} style={s.ico} />}
         label="Simpler"
         onPress={onSimpler}
       />
       <ActionBtn
-        icon={<Text style={[s.ico, {color:'#fff'}]}>?</Text>}
-        label="Ask 5 Q"
+        icon={<Image source={require('../assets/icons/ic_quiz.png')} style={[s.ico, {tintColor:'#fff'}]} />}
+        label="Take Quiz"
         onPress={onQuiz}
         primary
       />

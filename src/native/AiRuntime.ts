@@ -15,7 +15,11 @@ export const AiRuntime = {
     difficulty: string,
   ): Promise<ExplainResult> {
     const raw: string = await AiRuntimeModule.explainPage(ocrText, lang, ragContext, difficulty)
-    return JSON.parse(raw) as ExplainResult
+    try {
+      return JSON.parse(raw) as ExplainResult
+    } catch {
+      throw new Error(`Model output invalid. Raw: ${raw.slice(0, 200)}`)
+    }
   },
 
   async generateTeacherPack(
@@ -24,7 +28,11 @@ export const AiRuntime = {
     lang: string,
   ): Promise<TeacherPackResult> {
     const raw: string = await AiRuntimeModule.generateTeacherPack(ocrText, classGrade, lang)
-    return JSON.parse(raw) as TeacherPackResult
+    try {
+      return JSON.parse(raw) as TeacherPackResult
+    } catch {
+      throw new Error(`Model output invalid. Raw: ${raw.slice(0, 200)}`)
+    }
   },
 
   startChat(ocrText: string, explainSummary: string, lang: string): Promise<void> {

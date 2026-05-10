@@ -4,6 +4,7 @@ import {
   TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
+import BackButton from '../components/BackButton'
 import { C, SP, R, TOUCH_CTA, shadow1 } from '../theme'
 import { useStore } from '../store/appStore'
 import { AiRuntime } from '../native/AiRuntime'
@@ -24,10 +25,13 @@ export default function ExplainScreen() {
   const [waitingForModel, setWaitingForModel] = useState(false)
 
   useEffect(() => {
-    if (!explainResult) {
-      if (modelReady) runExplain()
-      else setWaitingForModel(true)
-    }
+    return () => { Speech.stop() }
+  }, [])
+
+  useEffect(() => {
+    if (!selectedBlockText || explainResult) return
+    if (modelReady) runExplain()
+    else setWaitingForModel(true)
   }, [])
 
   useEffect(() => {
@@ -69,24 +73,32 @@ export default function ExplainScreen() {
   return (
     <View style={s.root}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={12}>
-          <Text style={{fontSize:22,color:C.textPrimary}}>←</Text>
-        </TouchableOpacity>
+        <BackButton onPress={() => nav.goBack()} />
         <Text style={s.headerTitle}>Explanation</Text>
-        <TouchableOpacity onPress={runExplain} hitSlop={12} disabled={inferring || waitingForModel || !modelReady}>
-          <Text style={{fontSize:20,color:(inferring || waitingForModel || !modelReady) ? C.textDisabled : C.brand500}}>↺</Text>
+        <TouchableOpacity
+          style={[s.refreshBtn, (inferring || waitingForModel || !modelReady) && { opacity: 0.35 }]}
+          onPress={runExplain}
+          hitSlop={12}
+          disabled={inferring || waitingForModel || !modelReady}
+        >
+          <Text style={s.refreshIcon}>↺</Text>
         </TouchableOpacity>
       </View>
 
-      {(inferring || waitingForModel) ? (
+      {!selectedBlockText ? (
+        <View style={s.loading}>
+          <Text style={s.loadingText}>No page scanned yet</Text>
+          <Text style={s.loadingSubText}>Go to Learn → Scan Page first</Text>
+        </View>
+      ) : (inferring || waitingForModel) ? (
         <View style={s.loading}>
           <ActivityIndicator color={C.brand500} size="large" />
           <Text style={s.loadingText}>
-            {waitingForModel ? 'Waiting for model…' : 'GemmaSpark is thinking…'}
+            {waitingForModel ? 'Waiting for model…' : 'EdSparkAI is thinking…'}
           </Text>
           <Text style={s.loadingSubText}>
             {waitingForModel
-              ? 'First load takes 2–3 minutes on CPU'
+              ? 'Might take a minute or two'
               : 'Generating explanation'}
           </Text>
         </View>
@@ -149,6 +161,7 @@ export default function ExplainScreen() {
       )}
 
       {/* Bottom action bar */}
+
       {!inferring && !waitingForModel && explainResult && (
         <ActionBar
           onReadAloud={readAloud}
@@ -173,9 +186,9 @@ const s = StyleSheet.create({
   loading:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: SP.s3 },
   loadingText:  { fontSize: 16, fontWeight: '500', color: C.textPrimary, marginTop: SP.s2 },
   loadingSubText: { fontSize: 13, color: C.textTertiary },
-  card:         { backgroundColor: C.surface0, borderRadius: R.lg, borderWidth: 1, borderColor: C.surface3, padding: SP.s4, marginBottom: SP.s3 },
-  cardAccent:   { borderColor: C.brand100, backgroundColor: C.brand50 },
-  label:        { fontSize: 11, fontWeight: '600', color: C.textTertiary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: SP.s2 },
+  card:         { backgroundColor: C.surface0, borderRadius: R.lg, padding: SP.s4, marginBottom: SP.s3, ...shadow1 },
+  cardAccent:   { backgroundColor: C.brand50 },
+  label:        { fontSize: 10, fontWeight: '700', color: C.textTertiary, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: SP.s2 },
   bodyLg:       { fontSize: 18, lineHeight: 28, color: C.textPrimary, fontWeight: '400' },
   langExplain:  { fontSize: 17, lineHeight: 26, color: C.textSecondary, marginTop: SP.s3 },
   citation:     { fontFamily: 'monospace', fontSize: 12, color: C.textTertiary, marginTop: SP.s3 },
@@ -187,4 +200,6 @@ const s = StyleSheet.create({
   diffChipActive:    { borderColor: C.brand500, backgroundColor: C.brand100 },
   diffChipText:      { fontSize: 12, fontWeight: '600', color: C.textSecondary },
   diffChipTextActive:{ color: C.brand500 },
+  refreshBtn:        { width: 36, height: 36, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  refreshIcon:       { fontSize: 20, color: C.brand500, fontWeight: '600', lineHeight: 24 },
 })

@@ -4,6 +4,7 @@ import {
   TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal, ScrollView, Image,
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
+import BackButton from '../components/BackButton'
 import { C, SP, R, TOUCH_MIN } from '../theme'
 import { useStore, LANG_LABELS, Lang, ChatSession } from '../store/appStore'
 import { AiRuntime } from '../native/AiRuntime'
@@ -35,10 +36,12 @@ export default function ChatScreen({ route }: Props) {
   const [thinking, setThinking] = useState(false)
   const [listening, setListening] = useState(false)
   const [ready, setReady] = useState(false)
+  const [waitingForModel, setWaitingForModel] = useState(false)
   const [lang, setLang] = useState<Lang>(language)
   const [langPickerOpen, setLangPickerOpen] = useState(false)
   const [speakingId, setSpeakingId] = useState<string | null>(null)
   const [replyImage, setReplyImage] = useState<{ path: string; ocr: string } | null>(null)
+  const titleGeneratedRef = useRef(false)
   const listRef = useRef<FlatList>(null)
   const sessionIdRef = useRef<string>(resumeSessionId ?? Date.now().toString())
   const ocrTextRef = useRef<string>(selectedBlockText)
@@ -56,7 +59,7 @@ export default function ChatScreen({ route }: Props) {
   messagesRef.current = messages
 
   useEffect(() => {
-    if (messages.length === 0) return
+    if (messages.filter(m => m.role === 'user').length === 0) return
     const session: ChatSession = {
       id: sessionIdRef.current,
       title: ocrTextRef.current.split(' ').slice(0, 6).join(' ') || 'Chat Session',
@@ -91,8 +94,7 @@ export default function ChatScreen({ route }: Props) {
     }
 
     if (!modelReady) {
-      Alert.alert('Model loading', 'Wait for GemmaSpark to finish loading, then try again.')
-      nav.goBack()
+      setWaitingForModel(true)
       return
     }
     try {
@@ -105,6 +107,13 @@ export default function ChatScreen({ route }: Props) {
       nav.goBack()
     }
   }
+
+  useEffect(() => {
+    if (waitingForModel && modelReady) {
+      setWaitingForModel(false)
+      init()
+    }
+  }, [modelReady])
 
   async function switchLang(newLang: Lang) {
     setLangPickerOpen(false)
@@ -123,6 +132,27 @@ export default function ChatScreen({ route }: Props) {
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100)
   }
 
+  async function generateTitle() {
+    if (titleGeneratedRef.current) return
+    titleGeneratedRef.current = true
+    try {
+      const raw = await AiRuntime.chat('In 4–5 words, what topic is this page about? Reply with ONLY the title, no punctuation.')
+      const title = raw.replace(/["""'']/g, '').trim().split('\n')[0].slice(0, 50)
+      if (title.length > 3) {
+        saveChatSession({
+          id: sessionIdRef.current,
+          title,
+          preview: messagesRef.current.filter(m => m.role === 'ai').slice(-1)[0]?.text ?? '',
+          ocrText: ocrTextRef.current,
+          explainSummary: explainSummaryRef.current,
+          language: lang,
+          messages: messagesRef.current.map(m => ({ role: m.role, text: m.text })),
+          savedAt: Date.now(),
+        })
+      }
+    } catch {}
+  }
+
   async function send(text?: string) {
     const msg = (text ?? input).trim()
     if (!msg || thinking || !ready) return
@@ -136,6 +166,7 @@ export default function ChatScreen({ route }: Props) {
         ? await AiRuntime.chatWithImage(msg, pendingReply.path)
         : await AiRuntime.chat(msg)
       addMessage('ai', response)
+      if (!titleGeneratedRef.current) generateTitle()
     } catch {
       addMessage('ai', 'Sorry, something went wrong. Try again.')
     } finally {
@@ -193,12 +224,10 @@ export default function ChatScreen({ route }: Props) {
   return (
     <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={12}>
-          <Text style={s.back}>←</Text>
-        </TouchableOpacity>
+        <BackButton onPress={() => nav.goBack()} />
         <View>
           <Text style={s.title}>AI Tutor</Text>
-          <Text style={s.subtitle}>GemmaSpark · Offline</Text>
+          <Text style={s.subtitle}>EdSparkAI · Offline</Text>
         </View>
         <View style={s.headerRight}>
           <TouchableOpacity style={s.langPill} onPress={() => setLangPickerOpen(true)} hitSlop={8}>
@@ -209,6 +238,13 @@ export default function ChatScreen({ route }: Props) {
           </TouchableOpacity>
         </View>
       </View>
+
+      {waitingForModel && (
+        <View style={s.waitingBanner}>
+          <ActivityIndicator size="small" color={C.brand500} />
+          <Text style={s.waitingText}>Waiting for model to load…</Text>
+        </View>
+      )}
 
       <FlatList
         ref={listRef}
@@ -288,7 +324,7 @@ export default function ChatScreen({ route }: Props) {
           onPress={() => send()}
           disabled={!input.trim() || thinking || !ready}
         >
-          <Text style={s.sendIcon}>↑</Text>
+          <Image source={require('../assets/icons/ic_sparkle.png')} style={s.sendIcon} />
         </TouchableOpacity>
       </View>
 
@@ -314,6 +350,8 @@ export default function ChatScreen({ route }: Props) {
 
 const s = StyleSheet.create({
   root:             { flex: 1, backgroundColor: C.surface1 },
+  waitingBanner:    { flexDirection: 'row', alignItems: 'center', gap: SP.s2, backgroundColor: C.brand50, paddingHorizontal: SP.s4, paddingVertical: SP.s2 },
+  waitingText:      { fontSize: 13, color: C.brand500, fontWeight: '500' },
   header:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.s4, paddingTop: SP.s6, paddingBottom: SP.s3, backgroundColor: C.surface0, borderBottomWidth: 1, borderBottomColor: C.surface3 },
   back:             { fontSize: 22, color: C.textPrimary },
   title:            { fontSize: 16, fontWeight: '600', color: C.textPrimary },
@@ -329,7 +367,7 @@ const s = StyleSheet.create({
   bubbleWrapAi:     { alignItems: 'flex-start' },
   bubble:           { maxWidth: '80%', borderRadius: R.lg, padding: SP.s3 },
   bubbleUser:       { backgroundColor: C.brand500 },
-  bubbleAi:         { backgroundColor: C.surface0, borderWidth: 1, borderColor: C.surface3 },
+  bubbleAi:         { backgroundColor: C.surface0, elevation: 1, shadowColor: '#0E0E10', shadowOpacity: 0.05, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
   speakBtn:         { marginTop: 4, marginLeft: SP.s1 },
   speakIcon:        { width: 16, height: 16 },
   bubbleImage:      { width: 200, height: 150, borderRadius: R.md, marginBottom: SP.s1 },
@@ -351,7 +389,7 @@ const s = StyleSheet.create({
   input:            { flex: 1, minHeight: TOUCH_MIN, maxHeight: 100, backgroundColor: C.surface2, borderRadius: R.lg, paddingHorizontal: SP.s3, paddingVertical: SP.s2, fontSize: 15, color: C.textPrimary },
   sendBtn:          { width: TOUCH_MIN, height: TOUCH_MIN, borderRadius: R.full, backgroundColor: C.brand500, alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled:  { backgroundColor: C.surface3 },
-  sendIcon:         { fontSize: 20, color: '#fff', fontWeight: '700' },
+  sendIcon:         { width: 22, height: 22, tintColor: '#fff' },
   overlay:          { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   picker:           { backgroundColor: C.surface0, borderTopLeftRadius: R.lg, borderTopRightRadius: R.lg, paddingTop: SP.s4, paddingBottom: SP.s8, maxHeight: '70%' },
   pickerTitle:      { fontSize: 14, fontWeight: '600', color: C.textSecondary, paddingHorizontal: SP.s4, marginBottom: SP.s2 },

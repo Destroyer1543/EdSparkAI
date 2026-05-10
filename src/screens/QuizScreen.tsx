@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
+import BackButton from '../components/BackButton'
 import { C, SP, R, TOUCH_CTA, shadow1 } from '../theme'
 import { useStore } from '../store/appStore'
 
@@ -79,9 +80,7 @@ export default function QuizScreen() {
   return (
     <View style={s.root}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => nav.goBack()} hitSlop={12}>
-          <Text style={{fontSize:22,color:C.textPrimary}}>←</Text>
-        </TouchableOpacity>
+        <BackButton onPress={() => nav.goBack()} />
         <Text style={s.headerTitle}>Quiz</Text>
         <Text style={s.scoreChip}>{score} correct</Text>
       </View>
@@ -138,9 +137,9 @@ const s = StyleSheet.create({
   progressDot:    { flex: 1, height: 4, borderRadius: 2, backgroundColor: C.surface3 },
   progressDotActive: { backgroundColor: C.brand500 },
   progressDotDone:   { backgroundColor: C.brand200 },
-  questionCard:   { backgroundColor: C.surface0, borderRadius: R.lg, borderWidth: 1, borderColor: C.surface3, padding: SP.s4, marginBottom: SP.s4 },
+  questionCard:   { backgroundColor: C.surface0, borderRadius: R.lg, padding: SP.s4, marginBottom: SP.s4, ...shadow1 },
   questionText:   { fontSize: 18, lineHeight: 27, fontWeight: '500', color: C.textPrimary },
-  option:         { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface0, borderRadius: R.md, borderWidth: 1.5, borderColor: C.surface3, padding: SP.s3, marginBottom: SP.s2, minHeight: TOUCH_CTA },
+  option:         { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface0, borderRadius: R.md, borderWidth: 1.5, borderColor: C.surface2, padding: SP.s3, marginBottom: SP.s2, minHeight: TOUCH_CTA },
   optionCorrect:  { borderColor: C.success, backgroundColor: C.successBg },
   optionWrong:    { borderColor: C.danger, backgroundColor: C.dangerBg },
   optionLetter:   { width: 28, height: 28, borderRadius: 14, backgroundColor: C.surface2, textAlign: 'center', lineHeight: 28, fontWeight: '600', fontSize: 13, color: C.textSecondary, marginRight: SP.s3 },

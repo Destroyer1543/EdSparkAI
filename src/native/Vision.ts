@@ -10,4 +10,7 @@ export const Vision = {
   getLastCameraPhoto(): Promise<string> {
     return VisionModule.getLastCameraPhoto()
   },
+  cropImage(imagePath: string, xRatio: number, yRatio: number, wRatio: number, hRatio: number): Promise<string> {
+    return VisionModule.cropImage(imagePath, xRatio, yRatio, wRatio, hRatio)
+  },
 }
