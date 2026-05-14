@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, Image,
   ScrollView, Animated, Easing,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { C, SP, R, TOUCH_CTA, shadowBrand } from '../theme'
 import { useStore, LANG_LABELS, Lang } from '../store/appStore'
@@ -46,7 +47,7 @@ export default function OnboardingScreen() {
   if (modelLoading) return <LoadingScreen />
 
   return (
-    <View style={s.root}>
+    <SafeAreaView style={s.root} edges={['bottom']}>
       <View style={s.header}>
         <Image source={require('../assets/icons/gemmaspark_logo.png')} style={s.logo} resizeMode="contain" />
       </View>
@@ -102,7 +103,7 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   )
 }
 

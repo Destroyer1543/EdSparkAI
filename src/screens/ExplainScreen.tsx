@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import BackButton from '../components/BackButton'
 import { C, SP, R, TOUCH_CTA, shadow1 } from '../theme'
@@ -71,7 +72,7 @@ export default function ExplainScreen() {
   }
 
   return (
-    <View style={s.root}>
+    <SafeAreaView style={s.root} edges={['bottom']}>
       <View style={s.header}>
         <BackButton onPress={() => nav.goBack()} />
         <Text style={s.headerTitle}>Explanation</Text>
@@ -174,7 +175,7 @@ export default function ExplainScreen() {
           }}
         />
       )}
-    </View>
+    </SafeAreaView>
   )
 }
 

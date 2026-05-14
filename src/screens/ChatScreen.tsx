@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
   TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal, ScrollView, Image,
+  PermissionsAndroid,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import BackButton from '../components/BackButton'
 import { C, SP, R, TOUCH_MIN } from '../theme'
@@ -191,13 +193,22 @@ export default function ChatScreen({ route }: Props) {
 
   async function startVoice() {
     if (listening || thinking) return
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
+      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        Alert.alert('Microphone permission needed', 'Allow microphone access in Settings to use voice input.')
+        return
+      }
+    }
     setListening(true)
     try {
       const text = await SpeechInput.startListening(lang)
       setListening(false)
       send(text)
-    } catch {
+    } catch (e: any) {
       setListening(false)
+      if (e?.code === 'STT_EMPTY') Alert.alert('No speech detected', 'Speak clearly and try again.')
+      else if (e?.code === 'STT_ERROR') Alert.alert('Voice input failed', 'Speech recognition unavailable on this device.')
     }
   }
 
@@ -222,7 +233,8 @@ export default function ChatScreen({ route }: Props) {
   const langLabel = LANG_LABELS[lang]
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <SafeAreaView style={s.root} edges={['bottom']}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={s.header}>
         <BackButton onPress={() => nav.goBack()} />
         <View>
@@ -345,6 +357,7 @@ export default function ChatScreen({ route }: Props) {
         </TouchableOpacity>
       </Modal>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   )
 }
 

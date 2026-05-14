@@ -4,11 +4,14 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -27,6 +30,13 @@ class CameraActivity : AppCompatActivity() {
         val previewView = findViewById<PreviewView>(R.id.preview_view)
         val captureBtn  = findViewById<Button>(R.id.btn_capture)
         val cancelBtn   = findViewById<Button>(R.id.btn_cancel)
+        val bottomBar   = findViewById<LinearLayout>(R.id.bottom_bar)
+
+        ViewCompat.setOnApplyWindowInsetsListener(bottomBar) { view, insets ->
+            val navBar = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, navBar.bottom + (24 * resources.displayMetrics.density).toInt())
+            insets
+        }
 
         cancelBtn.setOnClickListener {
             setResult(Activity.RESULT_CANCELED)

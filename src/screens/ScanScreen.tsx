@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, Image,
   Dimensions, ActivityIndicator, Alert, PanResponder,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import BackButton from '../components/BackButton'
 import { C, SP, R, TOUCH_CTA } from '../theme'
@@ -29,7 +30,11 @@ export default function ScanScreen() {
   const layR       = useRef<Layout>({ ox: 0, oy: 0, dw: 0, dh: 0 })
   const containerRef = useRef<View>(null)
   const pageOffset   = useRef({ x: 0, y: 0 })
-  const { setCurrentPage, setSelectedBlock } = useStore()
+  const { setCurrentPage, setSelectedBlock, setExplainResult } = useStore()
+
+  useEffect(() => {
+    setExplainResult(null)
+  }, [])
 
   useEffect(() => {
     if (!captured || imgNat.w <= 1 || cSize.h <= 1) return
@@ -121,7 +126,7 @@ export default function ScanScreen() {
   const ch = crop.bottom - crop.top
 
   return (
-    <View style={s.root}>
+    <SafeAreaView style={s.root} edges={['bottom']}>
       <View style={s.header}>
         <BackButton onPress={() => nav.goBack()} />
         <Text style={s.headerTitle}>Scan Page</Text>
@@ -212,7 +217,7 @@ export default function ScanScreen() {
           </View>
         </>
       )}
-    </View>
+    </SafeAreaView>
   )
 }
 

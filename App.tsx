@@ -2,6 +2,7 @@ import 'react-native-gesture-handler'
 import React, { useEffect } from 'react'
 import { PaperProvider } from 'react-native-paper'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
@@ -25,13 +26,14 @@ const Stack = createNativeStackNavigator()
 const Tab = createBottomTabNavigator()
 
 function MainTabs() {
+  const insets = useSafeAreaInsets()
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: C.brand500,
         tabBarInactiveTintColor: C.textTertiary,
-        tabBarStyle: { borderTopColor: C.surface3, height: 64, paddingBottom: 10, paddingTop: 6 },
+        tabBarStyle: { borderTopColor: C.surface3, height: 64 + insets.bottom, paddingBottom: insets.bottom + 6, paddingTop: 6 },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       }}
     >
@@ -58,22 +60,28 @@ export default function App() {
   const { setModelReady, setModelLoading, setModelExists, modelExists, _hydrated, hasOnboarded } = useStore()
 
   useEffect(() => {
-    ModelDownload.checkModelExists().then(exists => {
-      setModelExists(exists)
-      if (exists) {
-        setModelLoading(true)
-        AiRuntime.warmup()
-          .then(() => setModelReady(true))
-          .catch((e: any) => { if (e?.code !== 'WARMUP_BUSY') setModelReady(false) })
-          .finally(() => setModelLoading(false))
-      }
-    })
+    const timeout = setTimeout(() => setModelExists(false), 6000)
+    ModelDownload.checkModelExists()
+      .then(exists => {
+        clearTimeout(timeout)
+        setModelExists(exists)
+        if (exists) {
+          setModelLoading(true)
+          AiRuntime.warmup()
+            .then(() => setModelReady(true))
+            .catch((e: any) => { if (e?.code !== 'WARMUP_BUSY') setModelReady(false) })
+            .finally(() => setModelLoading(false))
+        }
+      })
+      .catch(() => { clearTimeout(timeout); setModelExists(false) })
+    return () => clearTimeout(timeout)
   }, [])
 
   if (!_hydrated || modelExists === null) return <View style={{ flex: 1, backgroundColor: '#fff' }} />
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
       <PaperProvider theme={paperTheme}>
         <NavigationContainer>
           <Stack.Navigator screenOptions={{ headerShown: false }}
@@ -88,6 +96,7 @@ export default function App() {
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   )
 }

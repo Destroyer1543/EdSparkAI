@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import BackButton from '../components/BackButton'
 import { C, SP, R, TOUCH_CTA, shadow1 } from '../theme'
@@ -52,7 +53,7 @@ export default function QuizScreen() {
 
   if (done) {
     return (
-      <View style={s.root}>
+      <SafeAreaView style={s.root} edges={['bottom']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => nav.goBack()} hitSlop={12}>
             <Text style={{fontSize:22,color:C.textPrimary}}>←</Text>
@@ -73,12 +74,12 @@ export default function QuizScreen() {
             <Text style={s.secondaryBtnText}>Back to Explanation</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     )
   }
 
   return (
-    <View style={s.root}>
+    <SafeAreaView style={s.root} edges={['bottom']}>
       <View style={s.header}>
         <BackButton onPress={() => nav.goBack()} />
         <Text style={s.headerTitle}>Quiz</Text>
@@ -123,7 +124,7 @@ export default function QuizScreen() {
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   )
 }
 

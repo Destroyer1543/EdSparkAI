@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { C, SP, R, TOUCH_CTA } from '../theme'
 import { ModelDownload } from '../native/ModelDownload'
@@ -71,7 +72,7 @@ export default function ModelDownloadScreen() {
   const barWidth = `${Math.min(percent, 100)}%` as any
 
   return (
-    <View style={s.root}>
+    <SafeAreaView style={s.root} edges={['bottom']}>
       <Image source={require('../assets/icons/gemmaspark_logo.png')} style={s.logo} resizeMode="contain" />
 
       <Text style={s.title}>
@@ -111,7 +112,7 @@ export default function ModelDownloadScreen() {
           <Text style={s.cancelText}>Cancel</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </SafeAreaView>
   )
 }
 

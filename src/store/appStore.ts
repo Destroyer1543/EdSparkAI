@@ -166,7 +166,7 @@ export const useStore = create<AppState>()(
     {
       name: 'gemmaspark-store',
       storage: createJSONStorage(() => AsyncStorage),
-      onRehydrateStorage: () => (state) => { if (state) state._hydrated = true },
+      onRehydrateStorage: () => (_state) => { useStore.setState({ _hydrated: true }) },
       partialize: (s) => ({
         hasOnboarded:          s.hasOnboarded,
         language:              s.language,
