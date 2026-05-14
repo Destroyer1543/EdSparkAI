@@ -2,6 +2,8 @@
 
 **Igniting learning, even offline.**
 
+<img width="5075" height="1360" alt="edsparkai_screenshots_wide_collage" src="https://github.com/user-attachments/assets/728c3319-cdf1-4bb2-8774-8f74c4938479" />
+
 EdSparkAI is a fully offline Android app that lets students scan any printed textbook page and instantly get a bilingual explanation, key points, a real-life example, and a quiz — all powered by Gemma 4 E2B running entirely on the device. No internet. No server. No account.
 
 ---
