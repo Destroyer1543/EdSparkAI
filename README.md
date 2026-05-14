@@ -30,7 +30,7 @@ This was the core engineering challenge. Most on-device LLM demos require flagsh
 | Layer | Technology | Why |
 |---|---|---|
 | Inference | MediaPipe LiteRT `0.10.14` | Only stable Gemma 4 runtime on Android CPU |
-| Model | Gemma 4 E2B INT4 quantized (`.litertlm`) | ~1.4 GB vs ~4 GB FP16 — fits on 4 GB RAM devices |
+| Model | Gemma 4 E2B INT4 quantized (`.litertlm`) | ~2.4 GB vs ~4 GB FP16 — fits on 4 GB RAM devices |
 | Backend | `Backend.CPU()` | GPU backend requires Vulkan + VRAM; CPU works universally |
 | OCR | ML Kit Text Recognition v2 (Latin + Devanagari) | Fully offline, <50 MB |
 | TTS | Android TextToSpeech API | Zero overhead, built into OS |
@@ -38,7 +38,7 @@ This was the core engineering challenge. Most on-device LLM demos require flagsh
 
 ### Key Optimizations
 
-**INT4 Quantization** — The `.litertlm` model format packs weights into 4-bit integers. This cuts memory by 4× versus FP16 with minimal accuracy loss on instruction-following tasks. The model loads into ~1.4 GB RAM, leaving headroom for the OS and UI on a 4 GB device.
+**INT4 Quantization** — The `.litertlm` model format packs weights into 4-bit integers. This cuts memory by 4× versus FP16 with minimal accuracy loss on instruction-following tasks. The model loads into ~2.4 GB RAM, leaving headroom for the OS and UI on a 4 GB device.
 
 **Prompt Engineering for Small Models** — 2B parameter models are extremely sensitive to prompt structure. We use a strict system prompt (`"Start with { end with }"`) and a schema-first user prompt so the model fills in a JSON template rather than generating free-form text. This dramatically reduces hallucination and formatting failures on a constrained model.
 
@@ -46,7 +46,7 @@ This was the core engineering challenge. Most on-device LLM demos require flagsh
 
 **Wake Lock** — Holds `PARTIAL_WAKE_LOCK` during inference to prevent CPU throttling mid-generation on battery-saving devices.
 
-**Parallel Model Download** — 6 concurrent HTTP range requests (`Range: bytes=start-end`) download the 1.4 GB model ~6× faster than a single stream. Uses `RandomAccessFile.seek()` to write each chunk directly at its correct file offset — no merge step required.
+**Parallel Model Download** — 6 concurrent HTTP range requests (`Range: bytes=start-end`) download the 2.4 GB model ~6× faster than a single stream. Uses `RandomAccessFile.seek()` to write each chunk directly at its correct file offset — no merge step required.
 
 ---
 
@@ -92,7 +92,7 @@ npm install
 
 ### Model
 
-The Gemma 4 E2B INT4 model (~1.4 GB) is downloaded separately. Launch the app — the download screen handles it automatically with a 6-stream parallel downloader.
+The Gemma 4 E2B INT4 model (~2.4 GB) is downloaded separately. Launch the app — the download screen handles it automatically with a 6-stream parallel downloader.
 
 To push manually:
 ```bash
